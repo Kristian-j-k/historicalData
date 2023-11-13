@@ -8,12 +8,12 @@
  * Autentification
  *  get userID
  * 
- * New data
+ * Check for new data
  *  Get latest date from AH API
  *  Get all data from CDH since latest
  *  Post new data to AH API
  * 
- * Save CSV
+ * Download CSV
  *  
  * 
  */
@@ -21,13 +21,13 @@
 //Build html
 let app = document.getElementById('app')
 let home =""
+home += '<h1>Opdater Database</h1>'
+home += '<br>'
+home += '<button onclick="AnyNewRecords()">Tjek for ny data, og gem</button>'
+home += '<br>'
 home += '<h1>Download csv fil med invoices/lines, til Microsoft BI</h1>'
 home += '<br>'
 home += '<button onclick="makeAndDownLoadInvoiceLines()">Download csv</button>'
-home += '<br>'
-home += '<h1>Gem data i Database</h1>'
-home += '<br>'
-home += '<button onclick="AnyNewRecords()">Tjek for ny data, og gem</button>'
 app.innerHTML = home
 
 
@@ -46,10 +46,10 @@ async function CDHgetCardsaleTransactions(fromDate, take){
   let takeit
   (take)? takeit = `&take=${take}` : takeit = ''
   
-  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27${takeit}` //todo change to gt
-  console.log(url)
+  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${takeit}` //todo change to gt
+  
   let data = await CDHCompanyApiGet(url)
-
+  console.log(data)
 
   return {
     TotalRecordCount : data.body.PagerInfo.TotalRecordCount, 
@@ -105,8 +105,11 @@ const AHpostApi = async (url,data) => {
 const AhGetLatestTimestamp = async () => {
   const test = await AhgetLatest()
   if (test.data) {
-    let result = test.data.slice(0,test.data.indexOf("."))
-
+    console.warn(test.data)
+    let result
+    (test.data.indexOf(".") != -1)? result = test.data.slice(0,test.data.indexOf(".")) : result = test.data
+    
+    console.warn(result)
     return result
   }
 }
@@ -114,7 +117,7 @@ const AhGetLatestTimestamp = async () => {
 //savo to ah db
 async function AHsaveToDb(data){
   let temp = {
-    id: 10,
+    //id : 1,
     text: data[0].CardSeriesDisplayName,
     number: data[0].Quantity,
     dato: data[0].ServerTimestamp
@@ -123,12 +126,12 @@ async function AHsaveToDb(data){
 } 
 
 //show data from ah todo delete
-async function AHshowDataFromAh(){
-  let data = await AHgetApi()
-  console.warn("AH Data")
-  console.warn(data)
-}
-AHshowDataFromAh()
+// async function AHshowDataFromAh(){
+//   let data = await AHgetApi()
+//   console.warn("AH Data")
+//   console.warn(data)
+// }
+// AHshowDataFromAh()
 
 /**Autentification ---------------------------------------------------------------------------------------------------------------- */
 
@@ -141,14 +144,14 @@ async function UserId(){
 
 //Any new records?
 async function AnyNewRecords(){
-  let take = 2
-  let count = 2
+  let take = 2 //todo 20000
+  let count = 2 //todo 10
 
   while(true){
     let fromDate = await AhGetLatestTimestamp()
     let cardSaletransactions = await CDHgetCardsaleTransactions(fromDate, take)
     if(cardSaletransactions.TotalRecordCount > 0) await AHsaveToDb(cardSaletransactions.Transactions)
-    await AHshowDataFromAh()
+    //await AHshowDataFromAh()
     if(cardSaletransactions.TotalRecordCount < take || count == 0){break}
     count--
   }
