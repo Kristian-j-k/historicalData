@@ -42,15 +42,10 @@ async function CDHCompanyApiGet(url){
 //get cardsale
 async function CDHgetCardsaleTransactions(fromDate, take){
   if(!fromDate) fromDate = '1779-01-01T00:00:00'
-  console.warn(fromDate)
   let takeit
   (take)? takeit = `&take=${take}` : takeit = ''
-  
-  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${takeit}` //todo change to gt
-  
+  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${takeit}`
   let data = await CDHCompanyApiGet(url)
-  console.log(data)
-
   return {
     TotalRecordCount : data.body.PagerInfo.TotalRecordCount, 
     Transactions : data.body.Transactions 
@@ -58,19 +53,36 @@ async function CDHgetCardsaleTransactions(fromDate, take){
 }
 
 //appSettings
-async function CDHCompanyNo(){
-  let companyNo = CDH.companyNo
-  return companyNo
+function CDHappSettings(){
+  let companyNo = (CDH.companyNo)? CDH.companyNo : 'test_company'
+
+  return {companyNo : companyNo} 
 }
 
 
 /**Connection to AH API ---------------------------------------------------------------------------------------------------------- */
 const baseUrl = 'https://testapi20231108.azurewebsites.net' //api/test
 
+function AHheaders(){
+const coNo = CDHappSettings()['companyNo']
+  return   {
+    headers: {
+    'XApiKey': "4bc819e8-c062-4bfe-aa12-8e6ae08ace38",
+    'companyNo': coNo,
+    'user_hash': '123'
+    }
+  }
+}
+
+  
 //AH Get
 const AHget = async (url) => {
+  const headers = await AHheaders()['headers']
+
+console.warn(headers)
+
   try {
-    return await axios.get(baseUrl+url)
+    return await axios.get(baseUrl+url, {headers})
   } catch (error) {
     console.error(error)
   }
@@ -84,14 +96,15 @@ const AHgetApi = async () => {
 
 //AH Latest
 const AhgetLatest = async () => {
-  const latest = await AHget('/Latest')
+  const latest = await AHget('/api/test/Latest')
     return latest
 }
 
 //AH POST
 const AHpostApi = async (url,data) => {
+  const headers = await AHheaders()['headers']
   try {
-    return await axios.post(baseUrl+url,data)
+    return await axios.post(baseUrl+url,data, {headers})
     .then(function (response) {
       console.log(response);
     })
@@ -105,7 +118,6 @@ const AHpostApi = async (url,data) => {
 const AhGetLatestTimestamp = async () => {
   const test = await AhgetLatest()
   if (test.data) {
-    console.warn(test.data)
     let result
     (test.data.indexOf(".") != -1)? result = test.data.slice(0,test.data.indexOf(".")) : result = test.data
     
@@ -135,10 +147,7 @@ async function AHsaveToDb(data){
 
 /**Autentification ---------------------------------------------------------------------------------------------------------------- */
 
-//get userID
-async function UserId(){
-  CDHCompanyNo() //todo
-} 
+
 
 /**New data -------------------------------------------------------------------------------------------------------------------------*/
 
@@ -195,4 +204,11 @@ function exportToCsv(filename, rows) {
         temp += '\n'
     }
     exportToCsv('InvoiceLines', temp)
+}
+
+/* Run ---------------------------------------------------------------------------------*/
+
+
+function run(){
+
 }
