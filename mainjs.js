@@ -42,20 +42,27 @@ async function CDHCompanyApiGet(url){
 //get cardsale
 async function CDHgetCardsaleTransactions(fromDate, take){
   if(!fromDate) fromDate = '1779-01-01T00:00:00'
-  let takeit
-  (take)? takeit = `&take=${take}` : takeit = ''
-  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${takeit}`
+  let take2
+  (take)? take2 = `&take=${take}` : take2 = ''
+  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${take2}`
   let data = await CDHCompanyApiGet(url)
-  return {
-    TotalRecordCount : data.body.PagerInfo.TotalRecordCount, 
-    Transactions : data.body.Transactions 
-  }
+
+  return data.body
+}
+
+//get geoLocations
+async function CDHgetGeoLocations(){
+  let take = `&take=1000` //todo is 1000 enough
+  let url = `sites?${take}`
+  let data = await CDHCompanyApiGet(url)
+  if(data.body.PagerInfo.RecordCount < data.body.PagerInfo.TotalRecordCount) window.alert("The data could not load! contact administrator")
+  return data.body.Sites
 }
 
 //appSettings
 function CDHappSettings(){
   let companyNo = (CDH.companyNo)? CDH.companyNo : 'test_company'
-
+console.warn(companyNo)
   return {companyNo : companyNo} 
 }
 
@@ -79,8 +86,6 @@ const coNo = CDHappSettings()['companyNo']
 const AHget = async (url) => {
   const headers = await AHheaders()['headers']
 
-console.warn(headers)
-
   try {
     return await axios.get(baseUrl+url, {headers})
   } catch (error) {
@@ -103,6 +108,7 @@ const AhgetLatest = async () => {
 //AH POST
 const AHpostApi = async (url,data) => {
   const headers = await AHheaders()['headers']
+  console.warn(headers)
   try {
     return await axios.post(baseUrl+url,data, {headers})
     .then(function (response) {
@@ -126,24 +132,51 @@ const AhGetLatestTimestamp = async () => {
   }
 }
 
+//find product name
+function findProductName(data, no){
+
+console.warn(data)
+}
+
 //savo to ah db
 async function AHsaveToDb(data){
-  let temp = {
-    //id : 1,
-    text: data[0].CardSeriesDisplayName,
-    number: data[0].Quantity,
-    dato: data[0].ServerTimestamp
-    }
+  console.warn(data.Transactions)
+  console.warn("test")
+let sites = await CDHgetGeoLocations()
+
+data.Transactions.forEach(e => {
+  let ProductName 
+  let Longitude = 0
+  let Latitude = 0
+  data.Products.forEach(p=>{ 
+    if(p.PartNo == e.Product.PartNo){ ProductName = p.ProductName } 
+  })
+  sites.forEach(s=>{
+    if(s.GeoLocation) Longitude = s.GeoLocation.Longitude
+    if(s.GeoLocation) Latitude = s.GeoLocation.Latitude
+  })
+
+   let temp = {
+    ProductName : ProductName,
+    InvoiceUnitPrice : e.InvoiceUnitPrice,
+    Quantity : e.Quantity,
+    ServerSubTotal : e.ServerSubTotal,
+    ServerTimestamp : e.ServerTimestamp,
+    ServerUnitPrice : e.ServerUnitPrice,
+    SiteName : e.SiteName,
+    SiteNo : e.SiteNo,
+    TerminalTimestamp : e.TerminalTimestamp,
+    Latitude : Latitude,
+    Longitude : Longitude
+
+   }
+
+ 
   AHpostApi('/api/test',temp)
+})
 } 
 
-//show data from ah todo delete
-// async function AHshowDataFromAh(){
-//   let data = await AHgetApi()
-//   console.warn("AH Data")
-//   console.warn(data)
-// }
-// AHshowDataFromAh()
+
 
 /**Autentification ---------------------------------------------------------------------------------------------------------------- */
 
@@ -153,14 +186,14 @@ async function AHsaveToDb(data){
 
 //Any new records?
 async function AnyNewRecords(){
-  let take = 2 //todo 20000
-  let count = 2 //todo 10
+  let take = 10 //todo 20000
+  let count = 1 //todo 10
 
   while(true){
     let fromDate = await AhGetLatestTimestamp()
     let cardSaletransactions = await CDHgetCardsaleTransactions(fromDate, take)
-    if(cardSaletransactions.TotalRecordCount > 0) await AHsaveToDb(cardSaletransactions.Transactions)
-    //await AHshowDataFromAh()
+    if(cardSaletransactions.PagerInfo.TotalRecordCount > 0){await AHsaveToDb(cardSaletransactions)} 
+
     if(cardSaletransactions.TotalRecordCount < take || count == 0){break}
     count--
   }
@@ -191,24 +224,28 @@ function exportToCsv(filename, rows) {
 //Download Csv
   async function makeAndDownLoadInvoiceLines(){
     let json_data = (await AHgetApi()).data
-    //console.warn(json_data)
-    let temp=""
-    for(var i in json_data){
-        temp += json_data[i].id
-        temp += ';'
-        temp += json_data[i].text
-        temp += ';'
-        temp += json_data[i].number
-        temp += ';'
-        temp += json_data[i].dato
+    
+    let temp=''
+    for(key in json_data[0]) { //makes headers for the CSV file
+      if(json_data[0].hasOwnProperty(key)) {
+          temp += key
+          temp += ';'   
+      }
+    }
+    temp += '\n'
+
+    for(var i in json_data){ //Prepare data for the CSV file
+      let hasNext = false
+      for(key in json_data[i]) {  
+        if(hasNext == true) temp += ';' //makes ; in between colms
+        if(json_data[i].hasOwnProperty(key)) {
+            var value = json_data[i][key];
+            temp += value
+            hasNext = true
+        }
+      }
         temp += '\n'
     }
     exportToCsv('InvoiceLines', temp)
 }
 
-/* Run ---------------------------------------------------------------------------------*/
-
-
-function run(){
-
-}

@@ -2,6 +2,46 @@ create table table_1 (
 id int not null identity(1,1) primary key,
 text varchar(255),
 number float,
-dato datetime not null
+dato datetime not null 
 )
 
+create table cardsale (
+    id int not null identity(1,1) primary key,
+    ProductName varchar(255),
+    InvoiceUnitPrice float,
+    Quantity float,
+    ServerSubTotal float,
+    ServerTimestamp datetime,
+    ServerUnitPrice float,
+    SiteName varchar(255),
+    SiteNo float,
+    TerminalTimestamp datetime,
+    Latitude float,
+    Longitude float,
+    BiTimestamp datetime default (GETDATE())
+)
+
+insert into [dbo].[cardsale] (    
+	ProductName ,
+    InvoiceUnitPrice ,
+    Quantity ,
+    ServerSubTotal ,
+    ServerTimestamp ,
+    ServerUnitPrice ,
+    SiteName ,
+    SiteNo ,
+    TerminalTimestamp ,
+    Latitude ,
+    Longitude )
+values (    
+    'ProductName' ,
+    1 ,
+    1 ,
+    1 ,
+    '1779-01-01T00:00:00' ,
+    1 ,
+    'SiteName' ,
+    1 ,
+    '1779-01-01T00:00:00' ,
+    1 ,
+    1)
