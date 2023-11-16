@@ -5,9 +5,6 @@
  * 
  * Connection to AH API
  * 
- * Autentification
- *  get userID
- * 
  * Check for new data
  *  Get latest date from AH API
  *  Get all data from CDH since latest
@@ -62,7 +59,6 @@ async function CDHgetGeoLocations(){
 //appSettings
 function CDHappSettings(){
   let companyNo = (CDH.companyNo)? CDH.companyNo : 'test_company'
-console.warn(companyNo)
   return {companyNo : companyNo} 
 }
 
@@ -75,9 +71,8 @@ const coNo = CDHappSettings()['companyNo']
   return   {
     headers: {
     'XApiKey': "4bc819e8-c062-4bfe-aa12-8e6ae08ace38",
-    'companyNo': coNo,
-    'user_hash': '123'
-    }
+    
+    } //'Content-Type': 'application/json'
   }
 }
 
@@ -106,11 +101,11 @@ const AhgetLatest = async () => {
 }
 
 //AH POST
-const AHpostApi = async (url,data) => {
+const AHpostApi = async (data) => {
+  console.warn("poster data til ah")
   const headers = await AHheaders()['headers']
-  console.warn(headers)
   try {
-    return await axios.post(baseUrl+url,data, {headers})
+    return await axios.post(baseUrl+'/api/test',data, {headers})
     .then(function (response) {
       console.log(response);
     })
@@ -144,7 +139,9 @@ async function AHsaveToDb(data){
   console.warn("test")
 let sites = await CDHgetGeoLocations()
 
-data.Transactions.forEach(e => {
+for (i = 0 ; i < data.Transactions.length ; i++){
+//data.Transactions.forEach(e => {
+  let e = data.Transactions[i]
   let ProductName 
   let Longitude = 0
   let Latitude = 0
@@ -156,6 +153,8 @@ data.Transactions.forEach(e => {
     if(s.GeoLocation) Latitude = s.GeoLocation.Latitude
   })
 
+  //let now = new Date()
+ 
    let temp = {
     ProductName : ProductName,
     InvoiceUnitPrice : e.InvoiceUnitPrice,
@@ -167,18 +166,15 @@ data.Transactions.forEach(e => {
     SiteNo : e.SiteNo,
     TerminalTimestamp : e.TerminalTimestamp,
     Latitude : Latitude,
-    Longitude : Longitude
+    Longitude : Longitude,
+    //biTimestamp : now //todo delete
 
    }
 
- 
-  AHpostApi('/api/test',temp)
-})
+
+  await AHpostApi(temp)
+}//)
 } 
- 
-
-
-/**Autentification ---------------------------------------------------------------------------------------------------------------- */
 
 
 
