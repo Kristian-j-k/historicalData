@@ -12,7 +12,6 @@
  * 
  * Download CSV
  *  
- * 
  */
 
 //Build html
@@ -22,14 +21,15 @@ home += '<h1>Opdater Database</h1>'
 home += '<br>'
 home += '<button onclick="AnyNewRecords()">Tjek for ny data, og gem</button>'
 home += '<br>'
-home += '<h1>Download csv fil med invoices/lines, til Microsoft BI</h1>'
+home += '<h1>Download CSV-fil med data, til Microsoft BI</h1>'
 home += '<br>'
-home += '<button onclick="makeAndDownLoadInvoiceLines()">Download csv</button>'
+home += '<button onclick="makeAndDownLoadCSV()">Download CSV</button>'
 app.innerHTML = home
 
 
 
 /**Connection to CoDatahost ------------------------------------------------------------------------------------------ */
+
 async function CDHCompanyApiGet(url){
    let cdh = await CDH.companyApi.get(url)
    console.log(cdh)
@@ -37,15 +37,17 @@ async function CDHCompanyApiGet(url){
 }
 
 //get cardsale
-async function CDHgetCardsaleTransactions(fromDate, take){
-  if(!fromDate) fromDate = '1779-01-01T00:00:00'
+async function CDHgetCardsaleTransactions(take){
+  //if(!fromDate) fromDate = '1779-01-01T00:00:00'
   let take2
   (take)? take2 = `&take=${take}` : take2 = ''
-  let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${take2}`
+  //let url = `cardsale/transactions/items?filter=ServerTimestamp gt datetime%27${fromDate}%27&orderby=ServerTimestamp ASC${take2}`
+  let url = `cardsale/transactions/items?orderby=CompanyTraceNo ASC${take2}`
   let data = await CDHCompanyApiGet(url)
 
   return data.body
 }
+
 
 //get geoLocations
 async function CDHgetGeoLocations(){
@@ -102,7 +104,6 @@ const AhgetLatest = async () => {
 
 //AH POST
 const AHpostApi = async (data) => {
-  console.warn("poster data til ah")
   const headers = await AHheaders()['headers']
   try {
     return await axios.post(baseUrl+'/api/test',data, {headers})
@@ -135,8 +136,6 @@ console.warn(data)
 
 //savo to ah db
 async function AHsaveToDb(data){
-  console.warn(data.Transactions)
-  console.warn("test")
 let sites = await CDHgetGeoLocations()
 
 for (i = 0 ; i < data.Transactions.length ; i++){
@@ -152,8 +151,6 @@ for (i = 0 ; i < data.Transactions.length ; i++){
     if(s.GeoLocation) Longitude = s.GeoLocation.Longitude
     if(s.GeoLocation) Latitude = s.GeoLocation.Latitude
   })
-
-  //let now = new Date()
  
    let temp = {
     ProductName : ProductName,
@@ -167,7 +164,6 @@ for (i = 0 ; i < data.Transactions.length ; i++){
     TerminalTimestamp : e.TerminalTimestamp,
     Latitude : Latitude,
     Longitude : Longitude,
-    //biTimestamp : now //todo delete
 
    }
 
@@ -195,9 +191,14 @@ async function AnyNewRecords(){
   }
 }
 
+const obj = { hello: "world" };
+const blob2 = new Blob([JSON.stringify(obj, null, 2)], {
+  type: "application/json",
+});
 
+console.warn(blob2.text())
 //Csv
-function exportToCsv(filename, rows) {
+function exportFile(filename, rows) {
 
     var blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
     if (navigator.msSaveBlob) { // IE 10+
@@ -218,7 +219,7 @@ function exportToCsv(filename, rows) {
 }
 
 //Download Csv
-  async function makeAndDownLoadInvoiceLines(){
+  async function makeAndDownLoadCSV(){
     let json_data = (await AHgetApi()).data
     
     let temp=''
@@ -242,6 +243,6 @@ function exportToCsv(filename, rows) {
       }
         temp += '\n'
     }
-    exportToCsv('InvoiceLines', temp)
+    exportFile('InvoiceLines', temp)
 }
 

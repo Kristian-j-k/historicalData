@@ -1,3 +1,10 @@
+create table users (
+    id int not null identity(1,1) primary key,
+	CompanyNo int not null,
+	Password varchar(255) not null,
+    TableName varchar(255)
+)
+
 create table table_1 (
 id int not null identity(1,1) primary key,
 text varchar(255),
@@ -18,7 +25,8 @@ create table cardsale (
     TerminalTimestamp datetime,
     Latitude float,
     Longitude float,
-    BiTimestamp datetime default (GETDATE())
+    BiTimestamp datetime default (GETDATE()),
+    CompanyTraceNo int
 )
 
 insert into [dbo].[cardsale] (    
