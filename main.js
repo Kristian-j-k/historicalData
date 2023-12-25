@@ -33,10 +33,11 @@ app.innerHTML = home
 
 
 /**Connection to CoDatahost ------------------------------------------------------------------------------------------ */
-async function CDHappSettings(){
-  let apikey = await CDH.appSettings.apikey
-  console.log(apikey)
-  return {apikey : apikey}
+
+async function CDHappSettings() {
+  let appsettings = await CDH.appSettings
+  let companyNo = await CDH.companyNo
+  return {password : appsettings.password, companyNo : companyNo, headers : {headers: {'XApiKey': appsettings.apikey}} }
 }
 
 
@@ -63,51 +64,37 @@ async function CDHgetCardsaleTransactions(fromCompanyTraceNo,takeAmmount){
 
 
 /**Connection to AH API ---------------------------------------------------------------------------------------------------------- */
-const baseUrl = 'https://apisql20231223220750.azurewebsites.net/1/1234' 
 
-//AH headers
-function AHheaders(){
-  let appsettings = CDHappSettings()
-  return   {
-    headers: {
-    'XApiKey': appsettings.apikey, // kode til at få adgang til API på Azure
-    'Content-Type': 'application/json',
-    }
-  }
+function getBaseUrl(){
+return `https://apisql20231223220750.azurewebsites.net`
 }
 
+
+
+
 //AH Get
-const AHget = async (endpoint) => {
-  const headers = await AHheaders()['headers']
+async function AHget(baseUrl,appsettings,endpoint) {
+  console.log("ahget")
 
   try {
-    return await axios.get(baseUrl+endpoint, {headers})
+    return await axios.get(`${baseUrl}/${appsettings.companyNo}/${appsettings.password}${endpoint}`,appsettings.headers)
   } catch (error) {
     console.error(error)
   }
 }
 
 //AH Latest
-const AhgetLatest = async () => {
-  const latest = await AHget('/LatestCompanyTraceNo')
-
+async function AhgetLatest(baseUrl,appSettings){
+  const latest = await AHget(baseUrl,appSettings,'/LatestCompanyTraceNo')
+  console.log(latest)
     return latest.data
 }
 
-
-//AH api
-const AHgetApi = async () => {
-  const api = await AHget('/')
-    return api.data
-}
-
-
-
 //AH POST
-const AHpostApi = async (data) => {
-  const headers = await AHheaders()['headers']
+async function AHpostApi(baseUrl,appsettings,data) {
+  console.log(data)
   try {
-    return await axios.post(baseUrl+'/',data, {headers})
+    return await axios.post(`${baseUrl}/${appsettings.companyNo}/${appsettings.password}`,data,appsettings.headers)
     .then(function (response) {
       console.log(response);
     })
@@ -122,7 +109,7 @@ const AHpostApi = async (data) => {
 
 //savo to ah db 
 //runs through each property of the array, filter data and makes a Post each time
-async function AHsaveToDb(data){
+async function AHsaveToDb(baseUrl,appsettings,data){
 
 for (i = 0 ; i < data.Transactions.length ; i++){
 
@@ -149,8 +136,8 @@ for (i = 0 ; i < data.Transactions.length ; i++){
     Longitude : Longitude,
     CompanyTraceNo : e.CompanyTraceNo
    }
-
-  await AHpostApi(temp)
+console.log(temp)
+  await AHpostApi(baseUrl,appsettings,temp)
 }
 } 
 
@@ -163,14 +150,24 @@ async function AnyNewRecords(){
   let take = 2 //todo 20000            //limit the size of the object to be handled
   let count = 1 //todo 10               //protects agains infinite or too many loop
   let countDown = document.getElementById("countDown")
-  
+  console.log("Any new data?")
   while(true){
-    let fromCompanyTraceNo = await AhgetLatest()
+    let appsettings = await CDHappSettings()
+    console.log(appsettings)
+    let baseUrl = getBaseUrl()
+    console.log(baseUrl)
+    let fromCompanyTraceNo = await AhgetLatest(baseUrl,appsettings)
+    console.log("Last CompanyTraceNo "+fromCompanyTraceNo)
 
     let cardSaletransactions = await CDHgetCardsaleTransactions(fromCompanyTraceNo, take)
+    console.log("cardSaletransactions")
+    console.log(cardSaletransactions)
+
     let records = cardSaletransactions.PagerInfo.TotalRecordCount
     countDown.innerHTML = ` Data som ikke er gemt  ${records}`
-    if(cardSaletransactions.PagerInfo.TotalRecordCount > 0){await AHsaveToDb(cardSaletransactions)} 
+    if(cardSaletransactions.PagerInfo.TotalRecordCount > 0){
+      await AHsaveToDb(baseUrl,appsettings,cardSaletransactions)} 
+    console.log("Saved to DB")
     records = cardSaletransactions.TotalRecordCount
     if(cardSaletransactions.TotalRecordCount < take || count == 0){break }
     count--
@@ -201,7 +198,12 @@ function exportFile(filename, rows) {
 
 //Download Csv
   async function makeAndDownLoadCSV(){
-    let json_data = (await AHgetApi())
+    let appsettings = await CDHappSettings()
+    console.log(appsettings)
+    let baseUrl = getBaseUrl()
+    console.log(baseUrl)
+    let endpoint = ''
+    let json_data = (await AHget(baseUrl,appsettings,endpoint)).data
     console.log(json_data)
     let temp=''
     for(key in json_data[0]) { //makes headers for the CSV file
