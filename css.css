@@ -1,0 +1,28 @@
+.green-box{
+    margin: auto;
+    margin-top: 10px;
+    width: min-content;
+    width: 800px;
+    height: fit-content;
+    background-color: #E5EDE5;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+}
+h1{
+    font-size: 20px;
+   
+}
+.btn{
+    height: 25px;
+    width: 170px;
+    background-color: #D3E1F0;
+    border-color: #ABBAD0;
+    border-style: solid;
+    border-width: 1px ;
+
+}
+.btn:hover {
+    background-image: linear-gradient(#F7E290, white);
+    border-color: #EECC53;
+  }

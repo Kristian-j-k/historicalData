@@ -21,13 +21,17 @@
 //Build html
 let app = document.getElementById('app')
 let home =""
+home += '<div class="green-box">'
 home += '<h1>Opdater Database</h1>'
-home += '<br>'
-home += '<button onclick="AnyNewRecords()">Tjek for ny data, og gem</button><div id="countDown"></div>'
-home += '<br>'
+
+home += '<button class="btn" onclick="AnyNewRecords()">Tjek for ny data, og gem</button><div id="countDown"></div>'
+home += '</div>'
+
+home += '<div class="green-box">'
 home += '<h1>Download CSV-fil med data, til Microsoft BI</h1>'
-home += '<br>'
-home += '<button onclick="makeAndDownLoadCSV()">Download CSV</button>'
+
+home += '<button class="btn" onclick="makeAndDownLoadCSV()">Download CSV</button>'
+home += '</div>'
 app.innerHTML = home
 
 
